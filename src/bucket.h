@@ -7,7 +7,7 @@
 typedef struct {
     uint32_t* elems;
     size_t n_elems;
-    size_t capacity;
+    const size_t capacity;
 } Bucket;
 typedef size_t (*BucketIdx)(uint32_t);
 
