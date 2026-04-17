@@ -21,13 +21,14 @@ size_t bucket_idx(uint32_t elem) {
 
 int main(void) {
     uint32_t array[N];
-    random_array(array, N);
+    random_array(array, N, N);
     print_arr(array, N);
 
     Bucket* buckets = create_buckets(N, 10);
     if (bucket_sort(array, N, buckets, N, bucket_idx) == FAILURE) {
         exit(EXIT_FAILURE);
     }
+    printf("\n\n\n");
 
     print_arr(array, N);
 
