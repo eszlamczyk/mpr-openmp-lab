@@ -55,12 +55,12 @@ BucketSortStatus bucket_sort(uint32_t* array, size_t n_elems, Bucket* buckets, s
 
     #pragma omp parallel for schedule(dynamic)
     for (size_t i = 0; i < n_buckets; i++) {
-        qsort(&buckets[i].elems, buckets[i].n_elems, sizeof(uint32_t), compare);
+        qsort(buckets[i].elems, buckets[i].n_elems, sizeof(uint32_t), compare);
     }
 
     size_t write_at = 0;
     for (size_t i = 0; i < n_buckets; i++) {
-        memcpy(&array[write_at], &buckets[i].elems, buckets[i].n_elems * sizeof(uint32_t));
+        memcpy(&array[write_at], buckets[i].elems, buckets[i].n_elems * sizeof(uint32_t));
         write_at += buckets[i].n_elems;
     }
 
