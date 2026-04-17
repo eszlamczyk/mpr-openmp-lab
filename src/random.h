@@ -4,6 +4,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-void random_array(uint32_t* arr, size_t n_elems);
+void random_array(uint32_t* arr, size_t n_elems, uint32_t max);
 
 #endif

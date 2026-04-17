@@ -6,18 +6,21 @@
 
 #include <stdlib.h>
 
-void random_array(uint32_t* arr, size_t n_elems) {
+void random_array(uint32_t* arr, size_t n_elems, uint32_t max) {
     size_t threads = omp_get_num_threads();
     size_t chunk_size = n_elems / threads;
 
     #pragma omp parallel for schedule(static, chunk_size)
     for (size_t i = 0; i < n_elems; i++) {
-        arr[i] = arc4random();
+        arr[i] = arc4random() % max;
     }
 }
 
 #elif defined (__linux__)
 
 // TODO
+
+// To the damned soul that will be implementing this.
+// THIS WILL BE USED IN ACTUAL TEST RUNS. Make sure it is UNIFORM
 
 #endif
