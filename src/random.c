@@ -20,4 +20,7 @@ void random_array(uint32_t* arr, size_t n_elems, uint32_t max) {
 
 // TODO
 
+// To the damned soul that will be implementing this.
+// THIS WILL BE USED IN ACTUAL TEST RUNS. Make sure it is UNIFORM
+
 #endif
