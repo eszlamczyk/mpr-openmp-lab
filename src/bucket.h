@@ -4,11 +4,25 @@
 #include <stddef.h>
 #include <stdint.h>
 
-typedef struct bucket {
-    uint32_t* buckets;
-    size_t size;
+typedef struct {
+    uint32_t* elems;
+    size_t n_elems;
+    size_t capacity;
 } Bucket;
+typedef size_t (*BucketIdx)(uint32_t);
 
-void bucket_sort(uint32_t* array, size_t n_elems, Bucket* buckets);
+typedef enum {
+    PUSH_SUCCESSFUL,
+    PUSH_FAILED,
+} BucketStatus;
+
+typedef enum {
+    SUCCESS,
+    FAILURE,
+} BucketSortStatus;
+
+BucketStatus bucket_push(Bucket* bucket, uint32_t elem);
+
+BucketSortStatus bucket_sort(uint32_t* array, size_t n_elems, Bucket* buckets, size_t n_buckets, BucketIdx bucket_idx);
 
 #endif
