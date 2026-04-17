@@ -15,7 +15,10 @@ ifeq ($(UNAME_S),Darwin)
     LDFLAGS := -L/opt/homebrew/opt/libomp/lib -lomp
 endif
 
-.PHONY: bs2
+.PHONY: bs2 clean
+
+clean:
+	rm -rf out/*
 
 bs2: out/bucket_sort2.o out/bucket.o out/random.o out/main.o
 	mkdir -p out
