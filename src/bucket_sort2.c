@@ -17,7 +17,7 @@ static int compare(const void* a, const void* b) {
 }
 
 BucketSortStatus bucket_sort(uint32_t* array, size_t n_elems, Bucket* buckets, size_t n_buckets, BucketIdx bucket_idx) {
-    omp_lock_t* locks = (omp_lock_t*)malloc(n_buckets * sizeof(uint32_t));
+    omp_lock_t* locks = (omp_lock_t*)malloc(n_buckets * sizeof(omp_lock_t));
 
     #pragma omp parallel for
     for (size_t i = 0; i < n_buckets; i++) {
