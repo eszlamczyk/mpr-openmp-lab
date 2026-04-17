@@ -6,13 +6,13 @@
 
 #include <stdlib.h>
 
-void random_array(uint32_t* arr, size_t n_elems, uint32_t max) {
+void random_array(uint32_t* arr, size_t n_elems, uint32_t upper_bound) {
     size_t threads = omp_get_num_threads();
     size_t chunk_size = n_elems / threads;
 
     #pragma omp parallel for schedule(static, chunk_size)
     for (size_t i = 0; i < n_elems; i++) {
-        arr[i] = arc4random() % max;
+        arr[i] = arc4random_uniform(upper_bound);
     }
 }
 
