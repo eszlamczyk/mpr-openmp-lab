@@ -3,11 +3,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if defined(__APPLE__) && defined(__MACH__)
+#if defined (__APPLE__) && defined (__MACH__)
 
 #include <stdlib.h>
 
-void random_array(uint32_t *arr, size_t n_elems, uint32_t max) {
+void random_array(uint32_t* arr, size_t n_elems, uint32_t max) {
     size_t threads = omp_get_num_threads();
     size_t chunk_size = n_elems / threads;
 
@@ -17,11 +17,11 @@ void random_array(uint32_t *arr, size_t n_elems, uint32_t max) {
     }
 }
 
-#elif defined(__linux__)
+#elif defined (__linux__)
 
 #include <stdlib.h>
 
-void random_array(uint32_t *arr, size_t n_elems, uint32_t max) {
+void random_array(uint32_t* arr, size_t n_elems, uint32_t max) {
     size_t threads = omp_get_num_threads();
     size_t chunk_size = n_elems / threads;
 
