@@ -1,10 +1,9 @@
 UNAME_S := $(shell uname -s)
 
-# TODO
 # --- Linux Configuration ---
 ifeq ($(UNAME_S),Linux)
     CC      := gcc
-    CFLAGS  := -Wall -Wextra -O3 -fPIC
+    CFLAGS  := -Wall -Wextra -O3 -fPIC -fopenmp
     LDFLAGS := -lm -lrt -lpthread
 endif
 
