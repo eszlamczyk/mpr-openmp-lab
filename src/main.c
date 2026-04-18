@@ -21,19 +21,27 @@ size_t bucket_idx(double elem) {
 int main(int argc, char* argv[]) {
     size_t n = N;
     if (argc == 2) {
-        n = (size_t)atoi(argv[1]);
+        n = (size_t)strtoul(argv[1], NULL, 10);
     }
-    double array[n];
+    double* array = malloc(n * sizeof(double));
+    if (array == NULL) {
+        fprintf(stderr, "Failed to allocate array of size %zu\n", n);
+        exit(EXIT_FAILURE);
+    }
     random_array(array, n, (double)n);
     print_arr(array, n);
 
     Bucket* buckets = create_buckets(n, 10);
     if (bucket_sort(array, n, buckets, n, bucket_idx) == FAILURE) {
+        destroy_buckets(buckets, n);
+        free(array);
         exit(EXIT_FAILURE);
     }
     printf("\n\n\n");
 
     print_arr(array, n);
 
+    destroy_buckets(buckets, n);
+    free(array);
     return EXIT_SUCCESS;
 }

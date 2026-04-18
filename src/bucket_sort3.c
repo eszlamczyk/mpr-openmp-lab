@@ -18,7 +18,12 @@ static int compare(const void* a, const void* b) {
 BucketSortStatus bucket_sort(double *array, size_t n_elems, Bucket *buckets, size_t n_buckets, BucketIdx bucket_idx) {
     size_t n_threads = (size_t)omp_get_max_threads();
 
-    size_t local_capacity = n_elems / n_threads + 1;
+    /*
+     * Each thread holds a private copy of all buckets.
+     * With a uniform distribution, each thread-local bucket holds ~n / (n_threads * n_buckets) elements,
+     * so a small initial capacity suffices and total memory stays O(n) rather than O(n_threads * n).
+     */
+    size_t local_capacity = 10;
     Bucket* thread_buckets = create_buckets(n_threads * n_buckets, local_capacity);
 
     bool sort_failed = false;
