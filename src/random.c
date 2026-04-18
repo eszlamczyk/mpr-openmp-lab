@@ -1,7 +1,6 @@
 #include "random.h"
-#include <omp.h>
-#include <stddef.h>
 #include <stdint.h>
+#include <omp.h>
 
 #if defined (__APPLE__) && defined (__MACH__)
 
