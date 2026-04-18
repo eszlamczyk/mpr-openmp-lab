@@ -1,11 +1,10 @@
 #include "bucket.h"
 #include <stddef.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 Bucket bucket_init(size_t capacity) {
-    uint32_t* array = (uint32_t*)malloc(capacity * sizeof(uint32_t));
+    double* array = (double*)malloc(capacity * sizeof(double));
     if (array == NULL) {
         fprintf(stderr, "malloc failed miserably");
         exit(EXIT_FAILURE);
@@ -43,7 +42,7 @@ void destroy_buckets(Bucket *buckets, size_t n) {
     free(buckets);
 }
 
-BucketStatus bucket_push(Bucket *bucket, uint32_t elem) {
+BucketStatus bucket_push(Bucket *bucket, double elem) {
     if (bucket->n_elems == bucket->capacity) {
         return PUSH_FAILED;
     }

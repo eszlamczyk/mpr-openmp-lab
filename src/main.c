@@ -1,4 +1,3 @@
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <omp.h>
@@ -8,21 +7,21 @@
 
 #define N 1000000
 
-void print_arr(uint32_t* array, size_t n) {
+void print_arr(double* array, size_t n) {
     for (size_t i = 0; i < n; i++) {
-        printf("%u ", array[i]);
+        printf("%f ", array[i]);
     }
     printf("\n");
 }
 
-size_t bucket_idx(uint32_t elem) {
-    return elem;
+size_t bucket_idx(double elem) {
+    return (size_t)elem;
 }
 
 int main(void) {
-    uint32_t array[N];
-    random_array(array, N, N);
-    // print_arr(array, N);
+    double array[N];
+    random_array(array, N, (double)N);
+    print_arr(array, N);
 
     Bucket* buckets = create_buckets(N, 10);
     if (bucket_sort(array, N, buckets, N, bucket_idx) == FAILURE) {
