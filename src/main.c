@@ -5,6 +5,7 @@
 #include <omp.h>
 
 #include "bucket.h"
+#include "output.h"
 #include "random.h"
 
 #define N 1000000
@@ -25,6 +26,8 @@ int main(int argc, char* argv[]) {
     if (argc >= 2) {
         n = (size_t)strtoul(argv[1], NULL, 10);
     }
+
+    const char* csv_path = (argc >= 3) ? argv[2] : NULL;
 
     double* array = (double*)malloc(n * sizeof(double));
     if (array == NULL) {
@@ -60,43 +63,11 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "RESULT IS NOT SORTED\n");
     }
 
-#ifdef WRITE_TO_CSV
-    /*
-     * CSV output — one row per run, suitable for appending via slurm scripts:
-     *   ./out/bsX 1000000 >> results.csv
-     *
-     * Columns:
-     *   algorithm, n_threads, n_elems,
-     *   t_random, t_distribute, t_merge, t_sort, t_writeback, t_total,
-     *   sorted
-     *
-     * t_merge is 0 for bs2 (no merge step).
-     */
-
     const char* prog = strrchr(argv[0], '/');
     prog = prog ? prog + 1 : argv[0];
 
-    printf("%s,%d,%zu,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%d\n",
-           prog, omp_get_max_threads(), n,
-           t_random,
-           times.t_distribute,
-           times.t_merge,
-           times.t_sort,
-           times.t_writeback,
-           t_total,
-           sorted ? 1 : 0);
-#else
-    printf("Threads:      %d\n",     omp_get_max_threads());
-    printf("Elements:     %zu\n",    n);
-    printf("Sorted:       %s\n",     sorted ? "yes" : "NO");
-    printf("---\n");
-    printf("t_random:     %.6f s\n", t_random);
-    printf("t_distribute: %.6f s\n", times.t_distribute);
-    printf("t_merge:      %.6f s\n", times.t_merge);
-    printf("t_sort:       %.6f s\n", times.t_sort);
-    printf("t_writeback:  %.6f s\n", times.t_writeback);
-    printf("t_total:      %.6f s\n", t_total);
-#endif
+    print_results(prog, omp_get_max_threads(), n,
+                  t_random, &times, t_total, sorted, csv_path);
 
     destroy_buckets(buckets, n);
     free(array);

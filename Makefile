@@ -19,7 +19,7 @@ endif
 clean:
 	rm -rf out/*
 
-bs2: out/bucket_sort2.o out/bucket.o out/random.o out/main.o
+bs2: out/bucket_sort2.o out/bucket.o out/random.o out/output.o out/main.o
 	mkdir -p out
 	$(CC) $(CFLAGS) -DBS2 -o out/bs2 $^ $(LDFLAGS)
 
@@ -27,7 +27,7 @@ out/bucket_sort2.o: src/bucket_sort2.c
 	mkdir -p out
 	$(CC) $(CFLAGS) -c -o $@ $< -DBS2
 
-bs3: out/bucket_sort3.o out/bucket.o out/random.o out/main.o
+bs3: out/bucket_sort3.o out/bucket.o out/random.o out/output.o out/main.o
 	mkdir -p out
 	$(CC) $(CFLAGS) -DBS3 -o out/bs3 $^ $(LDFLAGS)
 
@@ -40,6 +40,10 @@ out/bucket.o: src/bucket.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 out/random.o: src/random.c
+	mkdir -p out
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+out/output.o: src/output.c
 	mkdir -p out
 	$(CC) $(CFLAGS) -c -o $@ $<
 
