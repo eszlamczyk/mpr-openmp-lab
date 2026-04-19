@@ -9,7 +9,7 @@
 
 void print_arr(double* array, size_t n) {
     for (size_t i = 0; i < n; i++) {
-        printf("%f ", array[i]);
+        printf("%.6f ", array[i]);
     }
     printf("\n");
 }
