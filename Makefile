@@ -14,11 +14,6 @@ ifeq ($(UNAME_S),Darwin)
     LDFLAGS := -L/opt/homebrew/opt/libomp/lib -lomp -fopenmp
 endif
 
-# Pass CSV=1 to enable CSV output mode:  make bs2 CSV=1
-ifeq ($(CSV),1)
-    CFLAGS += -DWRITE_TO_CSV
-endif
-
 .PHONY: bs2 bs3 clean
 
 clean:
