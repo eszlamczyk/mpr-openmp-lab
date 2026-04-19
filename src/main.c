@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
     if (argc == 2) {
         n = (size_t)strtoul(argv[1], NULL, 10);
     }
-    double* array = malloc(n * sizeof(double));
+    double* array = (double*)malloc(n * sizeof(double));
     if (array == NULL) {
         fprintf(stderr, "Failed to allocate array of size %zu\n", n);
         exit(EXIT_FAILURE);
