@@ -4,7 +4,7 @@ UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Linux)
     CC      := gcc
     CFLAGS  := -Wall -Wextra -O3 -fopenmp
-    LDFLAGS := -lm -lrt -fopenmp
+    LDFLAGS := -fopenmp
 endif
 
 # --- macOS Configuration ---
