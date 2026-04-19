@@ -3,7 +3,6 @@
 
 #include <stdlib.h>
 #include <omp.h>
-#include <stdint.h>
 #include <stddef.h>
 #include <string.h>
 #include <stdbool.h>
@@ -11,13 +10,19 @@
 #include "bucket.h"
 
 static int compare(const void* a, const void* b) {
-    uint32_t x = *(uint32_t*)a;
-    uint32_t y = *(uint32_t*)b;
+    double x = *(double*)a;
+    double y = *(double*)b;
 
-    return x - y;
+    if (x > y) {
+        return 1;
+    } else if (x < y) {
+        return -1;
+    } else {
+        return 0;
+    }
 }
 
-BucketSortStatus bucket_sort(uint32_t* array, size_t n_elems, Bucket* buckets, size_t n_buckets, BucketIdx bucket_idx) {
+BucketSortStatus bucket_sort(double* array, size_t n_elems, Bucket* buckets, size_t n_buckets, BucketIdx bucket_idx) {
     omp_lock_t* locks = (omp_lock_t*)malloc(n_buckets * sizeof(omp_lock_t));
     if (locks == NULL) {
         fprintf(stderr, "malloc failed miserably\n");
@@ -61,7 +66,7 @@ BucketSortStatus bucket_sort(uint32_t* array, size_t n_elems, Bucket* buckets, s
 
     #pragma omp parallel for schedule(dynamic)
     for (size_t i = 0; i < n_buckets; i++) {
-        qsort(buckets[i].elems, buckets[i].n_elems, sizeof(uint32_t), compare);
+        qsort(buckets[i].elems, buckets[i].n_elems, sizeof(double), compare);
     }
 
     size_t* write_at = (size_t*)malloc(n_buckets * sizeof(size_t));
@@ -76,7 +81,7 @@ BucketSortStatus bucket_sort(uint32_t* array, size_t n_elems, Bucket* buckets, s
 
     #pragma omp parallel for schedule(dynamic)
     for (size_t i = 0; i < n_buckets; i++) {
-        memcpy(&array[write_at[i]], buckets[i].elems, buckets[i].n_elems * sizeof(uint32_t));
+        memcpy(&array[write_at[i]], buckets[i].elems, buckets[i].n_elems * sizeof(double));
     }
     free(write_at);
 

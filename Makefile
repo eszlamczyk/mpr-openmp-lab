@@ -1,18 +1,17 @@
 UNAME_S := $(shell uname -s)
 
-# TODO
 # --- Linux Configuration ---
 ifeq ($(UNAME_S),Linux)
     CC      := gcc
-    CFLAGS  := -Wall -Wextra -O3 -fPIC
-    LDFLAGS := -lm -lrt -lpthread
+    CFLAGS  := -Wall -Wextra -O3 -fopenmp
+    LDFLAGS := -fopenmp
 endif
 
 # --- macOS Configuration ---
 ifeq ($(UNAME_S),Darwin)
     CC      := clang
     CFLAGS  := -Wall -Wextra -O3 -Xclang -fopenmp -I/opt/homebrew/opt/libomp/include
-    LDFLAGS := -L/opt/homebrew/opt/libomp/lib -lomp
+    LDFLAGS := -L/opt/homebrew/opt/libomp/lib -lomp -fopenmp
 endif
 
 .PHONY: bs2 clean
