@@ -14,7 +14,7 @@ ifeq ($(UNAME_S),Darwin)
     LDFLAGS := -L/opt/homebrew/opt/libomp/lib -lomp -fopenmp
 endif
 
-.PHONY: bs2 clean
+.PHONY: bs2 bs3 clean
 
 clean:
 	rm -rf out/*
@@ -26,6 +26,14 @@ bs2: out/bucket_sort2.o out/bucket.o out/random.o out/main.o
 out/bucket_sort2.o: src/bucket_sort2.c
 	mkdir -p out
 	$(CC) $(CFLAGS) -c -o $@ $< -DBS2
+
+bs3: out/bucket_sort3.o out/bucket.o out/random.o out/main.o
+	mkdir -p out
+	$(CC) $(CFLAGS) -DBS3 -o out/bs3 $^ $(LDFLAGS)
+
+out/bucket_sort3.o: src/bucket_sort3.c
+	mkdir -p out
+	$(CC) $(CFLAGS) -c -o $@ $< -DBS3
 
 out/bucket.o: src/bucket.c
 	mkdir -p out
