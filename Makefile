@@ -3,7 +3,7 @@ UNAME_S := $(shell uname -s)
 # --- Linux Configuration ---
 ifeq ($(UNAME_S),Linux)
     CC      := gcc
-    CFLAGS  := -Wall -Wextra -O3 -fPIC -fopenmp
+    CFLAGS  := -Wall -Wextra -O3 -fopenmp
     LDFLAGS := -lm -lrt -fopenmp
 endif
 
