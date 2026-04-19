@@ -3,15 +3,15 @@ UNAME_S := $(shell uname -s)
 # --- Linux Configuration ---
 ifeq ($(UNAME_S),Linux)
     CC      := gcc
-    CFLAGS  := -Wall -Wextra -O3 -fPIC -fopenmp
-    LDFLAGS := -lm -lrt -fopenmp
+    CFLAGS  := -Wall -Wextra -O3 -fopenmp
+    LDFLAGS := -fopenmp
 endif
 
 # --- macOS Configuration ---
 ifeq ($(UNAME_S),Darwin)
     CC      := clang
     CFLAGS  := -Wall -Wextra -O3 -Xclang -fopenmp -I/opt/homebrew/opt/libomp/include
-    LDFLAGS := -L/opt/homebrew/opt/libomp/lib -lomp
+    LDFLAGS := -L/opt/homebrew/opt/libomp/lib -lomp -fopenmp
 endif
 
 .PHONY: bs2 bs3 clean
