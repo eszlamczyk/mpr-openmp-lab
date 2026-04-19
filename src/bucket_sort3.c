@@ -1,6 +1,5 @@
-#include "bucket.h"
 #ifdef BS3
-
+#include "bucket.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <omp.h>
