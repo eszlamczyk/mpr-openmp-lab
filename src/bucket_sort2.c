@@ -13,7 +13,13 @@ static int compare(const void* a, const void* b) {
     double x = *(double*)a;
     double y = *(double*)b;
 
-    return (x > y) - (x < y);
+    if (x > y) {
+        return 1;
+    } else if (x < y) {
+        return -1;
+    } else {
+        return 0;
+    }
 }
 
 BucketSortStatus bucket_sort(double* array, size_t n_elems, Bucket* buckets, size_t n_buckets, BucketIdx bucket_idx) {
