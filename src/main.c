@@ -15,7 +15,7 @@ static size_t bucket_idx(double elem) {
 
 static bool is_sorted(double* array, size_t n) {
     for (size_t i = 1; i < n; i++) {
-        if (array[i] < array[i - 1]) return false;
+        if (array[i] <= array[i - 1]) return false;
     }
     return true;
 }
