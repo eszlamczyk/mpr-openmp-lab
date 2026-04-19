@@ -11,7 +11,13 @@ static int compare(const void* a, const void* b) {
     double x = *(double*)a;
     double y = *(double*)b;
 
-    return (x > y) - (x < y);
+    if (x > y) {
+        return 1;
+    } else if (x < y) {
+        return -1;
+    } else {
+        return 0;
+    }
 }
 
 BucketSortStatus bucket_sort(double *array, size_t n_elems, Bucket *buckets, size_t n_buckets, BucketIdx bucket_idx) {
@@ -53,7 +59,7 @@ BucketSortStatus bucket_sort(double *array, size_t n_elems, Bucket *buckets, siz
         return FAILURE;
     }
 
-    #pragma omp parallel for schedule(static) shared(sort_failed)
+    #pragma omp parallel for schedule(dynamic) shared(sort_failed)
     for (size_t b = 0; b < n_buckets; b++) {
         for (size_t t = 0; t < n_threads; t++) {
             Bucket* src = &thread_buckets[t * n_buckets + b];
