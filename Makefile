@@ -11,7 +11,7 @@ endif
 ifeq ($(UNAME_S),Darwin)
     CC      := clang
     CFLAGS  := -Wall -Wextra -O3 -Xclang -fopenmp -I/opt/homebrew/opt/libomp/include
-    LDFLAGS := -L/opt/homebrew/opt/libomp/lib -lomp -fopenmp
+    LDFLAGS := -L/opt/homebrew/opt/libomp/lib -lomp -Xclang -fopenmp
 endif
 
 .PHONY: bs2 bs3 clean
