@@ -22,7 +22,7 @@ static int compare(const void* a, const void* b) {
     }
 }
 
-BucketSortStatus bucket_sort(double* array, size_t n_elems, Bucket* buckets, size_t n_buckets, BucketIdx bucket_idx) {
+BucketSortStatus bucket_sort(double* array, size_t n_elems, Bucket* buckets, size_t n_buckets, BucketIdx bucket_idx, BucketSortTimes* times) {
     omp_lock_t* locks = (omp_lock_t*)malloc(n_buckets * sizeof(omp_lock_t));
     if (locks == NULL) {
         fprintf(stderr, "malloc failed miserably\n");
@@ -35,8 +35,10 @@ BucketSortStatus bucket_sort(double* array, size_t n_elems, Bucket* buckets, siz
     }
 
     bool sort_failed = false;
-    size_t threads = (size_t)omp_get_num_threads();
+    size_t threads = (size_t)omp_get_max_threads();
     size_t chunk_size = n_buckets / threads;
+
+    double t_start_distribute = omp_get_wtime();
 
     #pragma omp parallel for schedule(static, chunk_size) shared(sort_failed)
     for (size_t i = 0; i < n_elems; i++) {
@@ -53,6 +55,9 @@ BucketSortStatus bucket_sort(double* array, size_t n_elems, Bucket* buckets, siz
         omp_unset_lock(&locks[idx]);
     }
 
+    times->t_distribute = omp_get_wtime() - t_start_distribute;
+    times->t_merge = 0.0;
+
     #pragma omp parallel for
     for (size_t i = 0; i < n_buckets; i++) {
         omp_destroy_lock(&locks[i]);
@@ -63,11 +68,16 @@ BucketSortStatus bucket_sort(double* array, size_t n_elems, Bucket* buckets, siz
         return FAILURE;
     }
 
+    double t_start_sort = omp_get_wtime();
 
     #pragma omp parallel for schedule(dynamic)
     for (size_t i = 0; i < n_buckets; i++) {
         qsort(buckets[i].elems, buckets[i].n_elems, sizeof(double), compare);
     }
+
+    times->t_sort = omp_get_wtime() - t_start_sort;
+
+    double t_start_writeback = omp_get_wtime();
 
     size_t* write_at = (size_t*)malloc(n_buckets * sizeof(size_t));
     if (write_at == NULL) {
@@ -84,6 +94,8 @@ BucketSortStatus bucket_sort(double* array, size_t n_elems, Bucket* buckets, siz
         memcpy(&array[write_at[i]], buckets[i].elems, buckets[i].n_elems * sizeof(double));
     }
     free(write_at);
+
+    times->t_writeback = omp_get_wtime() - t_start_writeback;
 
     return SUCCESS;
 }
