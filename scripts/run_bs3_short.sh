@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+#SBATCH --mail-type=BEGIN,END,FAIL
+#SBATCH --mail-user=kuba.rekas.307@gmail.com
+#SBATCH --mail-user=eszlamczyk@student.agh.edu.pl
 #SBATCH --job-name=omp-bs3-short
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
