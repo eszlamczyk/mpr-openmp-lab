@@ -1,3 +1,6 @@
 /out
 /compile_flags.txt
 __pycache__/
+
+**/.venv
+**/activate
