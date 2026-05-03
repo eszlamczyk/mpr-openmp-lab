@@ -14,7 +14,7 @@
 
 set -euo pipefail
 
-N_VALUES=(1000 10000 100000)
+N_VALUES=(1000 10000 100000 1000000)
 THREAD_VALUES=(1 4 16 48)
 
 if [[ -n "${SLURM_SUBMIT_DIR:-}" ]]; then
