@@ -18,8 +18,12 @@ set -euo pipefail
 N_VALUES=(1000 10000 100000)
 THREAD_VALUES=(1 4 16 48)
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+if [[ -n "${SLURM_SUBMIT_DIR:-}" ]]; then
+    PROJECT_DIR="$SLURM_SUBMIT_DIR"
+else
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+fi
 
 if [[ -n "${SLURM_JOB_ID:-}" ]]; then
     OUTPUT_NAME="${1:-bs3_short_${SLURM_JOB_ID}}"
