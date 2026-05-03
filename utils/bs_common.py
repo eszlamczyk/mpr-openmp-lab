@@ -17,7 +17,7 @@ COMPONENTS = [
 
 
 def load(csv_file: str) -> pd.DataFrame:
-    df = pd.read_csv(csv_file, header=None, names=COLS)
+    df = pd.read_csv(csv_file)
     df["n_elems"]   = df["n_elems"].astype(int)
     df["n_threads"] = df["n_threads"].astype(int)
     return df
