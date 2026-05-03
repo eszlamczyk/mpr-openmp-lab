@@ -7,7 +7,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=64
 #SBATCH --time=00:10:00
-#SBATCH --partition=plgrid-short
+#SBATCH --partition=plgrid-testing
 #SBATCH --output=logs/bs3-short-%j.out
 #SBATCH --error=logs/bs3-short-%j.err
 #SBATCH --exclusive
