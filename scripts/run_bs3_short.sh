@@ -5,7 +5,7 @@
 #SBATCH --job-name=omp-bs3-short
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=64
+#SBATCH --cpus-per-task=48
 #SBATCH --time=00:10:00
 #SBATCH --partition=plgrid-testing
 #SBATCH --output=logs/bs3-short-%j.out
@@ -16,7 +16,7 @@
 set -euo pipefail
 
 N_VALUES=(1000 10000 100000)
-THREAD_VALUES=(1 4 16 64 128)
+THREAD_VALUES=(1 4 16 48)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
