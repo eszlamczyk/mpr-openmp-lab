@@ -11,7 +11,7 @@
 #SBATCH --output=logs/bs3-%j.out
 #SBATCH --error=logs/bs3-%j.err
 #SBATCH --exclusive
-##SBATCH --account=<your-grant-id>
+#SBATCH --account=plgmpr26-cpu
 
 set -euo pipefail
 
