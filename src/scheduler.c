@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <sys/random.h>
 
-#define N 1000000
+#define N 10000000
 
 typedef struct {
     double static_calc;
