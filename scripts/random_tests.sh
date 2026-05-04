@@ -14,7 +14,7 @@
 
 set -euo pipefail
 
-N=10000000
+N_VALUES=(100 1000 10000 100000 1000000 10000000)
 THREAD_VALUES=(1 2 8 16 32 48)
 
 if [[ -n "${SLURM_SUBMIT_DIR:-}" ]]; then
@@ -52,18 +52,20 @@ TOTAL=0
 SKIPPED=0
 FAILED=0
 
-for T in "${THREAD_VALUES[@]}"; do
-    if (( T > MAX_THREADS )); then
-        echo "  SKIP  scheduler threads=$T (threads > allocated $MAX_THREADS)"
-        (( SKIPPED++ )) || true
-        continue
-    fi
-    echo "  RUN   scheduler N=$N threads=$T"
-    if ! OMP_NUM_THREADS="$T" "$PROJECT_DIR/out/scheduler" "$N" "$OUTPUT_FILE"; then
-        echo "  WARN  scheduler N=$N threads=$T failed — row omitted"
-        (( FAILED++ )) || true
-    fi
-    (( TOTAL++ )) || true
+for N in "${N_VALUES[@]}"; do
+    for T in "${THREAD_VALUES[@]}"; do
+        if (( T > MAX_THREADS )); then
+            echo "  SKIP  scheduler N=$N threads=$T (threads > allocated $MAX_THREADS)"
+            (( SKIPPED++ )) || true
+            continue
+        fi
+        echo "  RUN   scheduler N=$N threads=$T"
+        if ! OMP_NUM_THREADS="$T" "$PROJECT_DIR/out/scheduler" "$N" "$OUTPUT_FILE"; then
+            echo "  WARN  scheduler N=$N threads=$T failed — row omitted"
+            (( FAILED++ )) || true
+        fi
+        (( TOTAL++ )) || true
+    done
 done
 
 echo "Done. $TOTAL runs, $SKIPPED skipped, $FAILED failed."

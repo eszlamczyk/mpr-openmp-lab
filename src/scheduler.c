@@ -13,7 +13,7 @@ typedef struct {
     double dynamic_1;
 } RandTimes;
 
-void write_csv(const RandTimes* times, const char* csv_path) {
+void write_csv(const RandTimes* times, const char* csv_path, size_t n_elems, int n_threads) {
     if (csv_path == NULL) return;
 
     int write_header = (access(csv_path, F_OK) != 0);
@@ -25,9 +25,11 @@ void write_csv(const RandTimes* times, const char* csv_path) {
     }
 
     if (write_header)
-        fprintf(f, "static_calc,static_1,dynamic_calc,dynamic_1\n");
+        fprintf(f, "n_elems,n_threads,static_calc,static_1,dynamic_calc,dynamic_1\n");
 
-    fprintf(f, "%.6f,%.6f,%.6f,%.6f\n",
+    fprintf(f, "%zu,%d,%.6f,%.6f,%.6f,%.6f\n",
+            n_elems,
+            n_threads,
             times->static_calc,
             times->static_1,
             times->dynamic_calc,
@@ -134,7 +136,7 @@ int main(int argc, char* argv[]) {
     end = omp_get_wtime();
     times.dynamic_1 = end - start;
 
-    write_csv(&times, csv_path);
+    write_csv(&times, csv_path, n, omp_get_max_threads());
 
     return EXIT_SUCCESS;
 }
