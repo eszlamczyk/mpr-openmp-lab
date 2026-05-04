@@ -91,7 +91,8 @@ BucketSortStatus bucket_sort(double *array, size_t n_elems, Bucket *buckets, siz
 
     double t_start_sort = omp_get_wtime();
 
-    #pragma omp parallel for schedule(dynamic)
+    const size_t chunk_size = n_buckets / n_threads;
+    #pragma omp parallel for schedule(static, chunk_size)
     for (size_t i = 0; i < n_buckets; i++) {
         qsort(buckets[i].elems, buckets[i].n_elems, sizeof(double), compare);
     }
