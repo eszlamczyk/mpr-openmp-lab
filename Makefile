@@ -59,6 +59,6 @@ out/main.o: src/main.c
 	mkdir -p out
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-out/scheduler: src/scheduler.c
+out/scheduler: src/scheduler_bench.c
 	mkdir -p out
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
