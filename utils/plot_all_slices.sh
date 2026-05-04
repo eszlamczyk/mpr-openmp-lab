@@ -25,7 +25,9 @@ THREAD_VALUES=(1 2 3 4 6 8 10 12 16 20 24 32 48)
 run_slices() {
     local csv="$1"
     local algo="$2"
-    local algo_out="$OUT_DIR/$algo"
+    local csv_name
+    csv_name="$(basename "$csv" .csv)"
+    local algo_out="$OUT_DIR/$csv_name"
     mkdir -p "$algo_out"
 
     echo "=== $algo  ($csv)  =>  $algo_out"
