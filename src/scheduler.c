@@ -16,13 +16,16 @@ typedef struct {
 void write_csv(const RandTimes* times, const char* csv_path) {
     if (csv_path == NULL) return;
 
-    FILE* f = fopen(csv_path, "w");
+    int write_header = (access(csv_path, F_OK) != 0);
+
+    FILE* f = fopen(csv_path, "a");
     if (f == NULL) {
         fprintf(stderr, "Failed to open CSV file: %s\n", csv_path);
         return;
     }
 
-    fprintf(f, "static_calc,static_1,dynamic_calc,dynamic_1\n");
+    if (write_header)
+        fprintf(f, "static_calc,static_1,dynamic_calc,dynamic_1\n");
 
     fprintf(f, "%.6f,%.6f,%.6f,%.6f\n",
             times->static_calc,
