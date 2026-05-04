@@ -24,7 +24,7 @@ import numpy as np
 
 VARIANTS = [
     ("static_calc",  "static(N/T)",   "#5b8dd9"),
-    ("static_1",     "static(def)",   "#4caf7d"),
+    ("static_1",     "static(1)",     "#4caf7d"),
     ("dynamic_calc", "dynamic(N/T)",  "#e05c5c"),
     ("dynamic_1",    "dynamic(1)",    "#f0a830"),
 ]
