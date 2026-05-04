@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Plot line charts for a fixed N or fixed thread-count slice of the benchmark data.
 

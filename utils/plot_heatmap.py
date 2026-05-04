@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Plot heatmaps from bucket-sort benchmark CSV output.
 
