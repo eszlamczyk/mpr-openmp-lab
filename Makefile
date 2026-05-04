@@ -14,13 +14,15 @@ ifeq ($(UNAME_S),Darwin)
     LDFLAGS := -L/opt/homebrew/opt/libomp/lib -lomp -Xclang -fopenmp
 endif
 
-.PHONY: bs2 bs3 all clean
+.PHONY: bs2 bs3 scheduler all clean
 
-all: out/bs2 out/bs3
+all: out/bs2 out/bs3 out/scheduler
 
 bs2: out/bs2
 
 bs3: out/bs3
+
+scheduler: out/scheduler
 
 clean:
 	rm -rf out/*
@@ -56,3 +58,7 @@ out/output.o: src/output.c
 out/main.o: src/main.c
 	mkdir -p out
 	$(CC) $(CFLAGS) -c -o $@ $<
+
+out/scheduler: src/scheduler.c
+	mkdir -p out
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
