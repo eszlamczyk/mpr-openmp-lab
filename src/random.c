@@ -6,7 +6,7 @@
 
 void random_array(double* arr, size_t n_elems, double max) {
     size_t threads = (size_t)omp_get_max_threads();
-    size_t chunk_size = n_elems / threads;
+    const size_t chunk_size = n_elems / threads;
     #pragma omp parallel
     {
         unsigned short xsubi[3];

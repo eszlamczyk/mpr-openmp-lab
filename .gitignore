@@ -1,6 +1,6 @@
 /out
 /compile_flags.txt
-/results/plots
+/plots
 __pycache__/
 
 **/.venv
