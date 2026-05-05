@@ -23,23 +23,35 @@ void bucket_free(Bucket *bucket) {
 }
 
 Bucket* create_buckets(size_t n, size_t capacity) {
-    Bucket* buckets = (Bucket*)malloc(n * sizeof(Bucket));
-    if (buckets == NULL) {
+    /*
+     * Single allocation: Bucket metadata array immediately followed by the
+     * element slab.  Layout:
+     *
+     *   [ Bucket[0] | ... | Bucket[n-1] | elems[0] | ... | elems[n-1] ]
+     *
+     * Each Bucket[i].elems points into the slab at offset i * capacity.
+     * This replaces n+1 separate malloc calls with one, which matters when n
+     * is large (e.g. n_threads * n_buckets in bs3).
+     */
+    void* block = malloc(n * sizeof(Bucket) + n * capacity * sizeof(double));
+    if (block == NULL) {
         fprintf(stderr, "malloc failed miserably");
         exit(EXIT_FAILURE);
     }
 
+    Bucket* buckets = (Bucket*)block;
+    double* slab    = (double*)((char*)block + n * sizeof(Bucket));
+
     for (size_t i = 0; i < n; i++) {
-        buckets[i] = bucket_init(capacity);
+        buckets[i].elems    = &slab[i * capacity];
+        buckets[i].n_elems  = 0;
+        buckets[i].capacity = capacity;
     }
     return buckets;
 }
 
-void destroy_buckets(Bucket *buckets, size_t n) {
-    for (size_t i = 0; i < n; i++) {
-        bucket_free(&buckets[i]);
-    }
-    free(buckets);
+void destroy_buckets(Bucket *buckets) {
+    free(buckets); /* metadata and slab are a single allocation */
 }
 
 BucketStatus bucket_push(Bucket *bucket, double elem) {

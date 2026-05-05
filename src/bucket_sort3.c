@@ -59,7 +59,7 @@ BucketSortStatus bucket_sort(double *array, size_t n_elems, Bucket *buckets, siz
     times->t_distribute = omp_get_wtime() - t_start_distribute;
 
     if (sort_failed) {
-        destroy_buckets(thread_buckets, n_threads * n_buckets);
+        destroy_buckets(thread_buckets);
         return FAILURE;
     }
 
@@ -83,7 +83,7 @@ BucketSortStatus bucket_sort(double *array, size_t n_elems, Bucket *buckets, siz
 
     times->t_merge = omp_get_wtime() - t_start_merge;
 
-    destroy_buckets(thread_buckets, n_threads * n_buckets);
+    destroy_buckets(thread_buckets);
 
     if (sort_failed) {
         return FAILURE;
