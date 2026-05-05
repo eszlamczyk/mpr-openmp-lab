@@ -6,7 +6,7 @@ Usage:
     python plot_scheduler.py <csv_file> [output_dir]
 
 CSV columns expected:
-    n_elems, n_threads, static_calc, static_1, dynamic_calc, dynamic_1
+    n_elems, n_threads, static_calc, static_default, static_1, dynamic_calc, dynamic_default
 
 Produces:
     scheduler_time_by_N.png      — time vs threads, one subplot per problem size
@@ -23,10 +23,11 @@ import numpy as np
 
 
 VARIANTS = [
-    ("static_calc",  "static(N/T)",   "#5b8dd9"),
-    ("static_1",     "static(1)",     "#4caf7d"),
-    ("dynamic_calc", "dynamic(N/T)",  "#e05c5c"),
-    ("dynamic_1",    "dynamic(1)",    "#f0a830"),
+    ("static_calc",     "static(N/T)",     "#5b8dd9"),
+    ("static_default",  "static(default)", "#3a7abf"),
+    ("static_1",        "static(1)",       "#4caf7d"),
+    ("dynamic_calc",    "dynamic(N/T)",    "#e05c5c"),
+    ("dynamic_default", "dynamic(default)","#f0a830"),
 ]
 
 

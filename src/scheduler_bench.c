@@ -8,9 +8,10 @@
 
 typedef struct {
     double static_calc;
+    double static_default;
     double static_1;
     double dynamic_calc;
-    double dynamic_1;
+    double dynamic_default;
 } RandTimes;
 
 void write_csv(const RandTimes* times, const char* csv_path, size_t n_elems, int n_threads) {
@@ -25,15 +26,16 @@ void write_csv(const RandTimes* times, const char* csv_path, size_t n_elems, int
     }
 
     if (write_header)
-        fprintf(f, "n_elems,n_threads,static_calc,static_1,dynamic_calc,dynamic_1\n");
+        fprintf(f, "n_elems,n_threads,static_calc,static_default,static_1,dynamic_calc,dynamic_default\n");
 
-    fprintf(f, "%zu,%d,%.6f,%.6f,%.6f,%.6f\n",
+    fprintf(f, "%zu,%d,%.6f,%.6f,%.6f,%.6f,%.6f\n",
             n_elems,
             n_threads,
             times->static_calc,
+            times->static_default,
             times->static_1,
             times->dynamic_calc,
-            times->dynamic_1);
+            times->dynamic_default);
 
     fclose(f);
 }
@@ -54,7 +56,7 @@ void random_array_1(double* arr, size_t n_elems, double max) {
     }
 }
 
-// Static scheduling with chunk_size = 1
+// Static scheduling with default chunk size
 void random_array_2(double* arr, size_t n_elems, double max) {
     #pragma omp parallel
     {
@@ -62,6 +64,20 @@ void random_array_2(double* arr, size_t n_elems, double max) {
         getentropy(xsubi, sizeof(xsubi));
 
         #pragma omp for schedule(static)
+        for (size_t i = 0; i < n_elems; i++) {
+            arr[i] = erand48(xsubi) * max;
+        }
+    }
+}
+
+// Static scheduling with chunk_size = 1
+void random_array_static_1(double* arr, size_t n_elems, double max) {
+    #pragma omp parallel
+    {
+        unsigned short xsubi[3];
+        getentropy(xsubi, sizeof(xsubi));
+
+        #pragma omp for schedule(static, 1)
         for (size_t i = 0; i < n_elems; i++) {
             arr[i] = erand48(xsubi) * max;
         }
@@ -124,6 +140,11 @@ int main(int argc, char* argv[]) {
     start = omp_get_wtime();
     random_array_2(array, n, n);
     end = omp_get_wtime();
+    times.static_default = end - start;
+
+    start = omp_get_wtime();
+    random_array_static_1(array, n, n);
+    end = omp_get_wtime();
     times.static_1 = end - start;
 
     start = omp_get_wtime();
@@ -134,7 +155,7 @@ int main(int argc, char* argv[]) {
     start = omp_get_wtime();
     random_array_4(array, n, n);
     end = omp_get_wtime();
-    times.dynamic_1 = end - start;
+    times.dynamic_default = end - start;
 
     write_csv(&times, csv_path, n, omp_get_max_threads());
 
