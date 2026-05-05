@@ -45,7 +45,7 @@ Sortowanie kubełkowe (*ang. bucket sort*) jest algorytmem sortowania działają
 | Faza | Niezależność iteracji | Możliwość zrównoleglenia | Uwaga |
 |---|---|---|---|
 | (b) Rozdział | Nie — wiele wątków może pisać do tego samego kubełka | Tak, ale wymaga synchronizacji | Konieczne blokady lub eliminacja współdzielenia |
-| (c) Sortowanie kubełków | Tak — kubełki są od siebie niezależne | Tak | Warto zastosować harmonogramowanie dynamiczne ze względu na nierówne rozmiary kubełków |
+| (c) Sortowanie kubełków | Tak — kubełki są od siebie niezależne | Tak | Przy $k = n$ kubełki są niemal równe, więc `schedule(static)` wystarczy; dynamiczne byłoby korzystne przy mocno nierównych rozmiarach |
 | (d) Prefix sum | Nie — każdy termin zależy od poprzedniego | Zasadniczo sekwencyjne | $O(k)$ — koszt pomijalny wobec pozostałych faz |
 | (d) Zapis | Tak — każdy kubełek trafia do rozłącznego fragmentu tablicy | Tak | Brak wyścigu przy zapisie |
 
@@ -152,8 +152,8 @@ Moduł `bucket.c` udostępnia cztery operacje:
 |---|---|
 | `bucket_init(capacity)` | Alokuje kubełek o zadanej pojemności |
 | `bucket_push(bucket, elem)` | Wstawia element; zwraca `PUSH_FAILED` gdy kubełek pełny |
-| `create_buckets(n, capacity)` | Alokuje tablicę `n` kubełków jednym `malloc` na metadane + `n` osobnych `malloc` na `elems` |
-| `destroy_buckets(buckets, n)` | Zwalnia wszystkie `elems` i tablicę metadanych |
+| `create_buckets(n, capacity)` | Alokuje tablicę `n` kubełków **jednym `malloc`**: ciągły blok `[Bucket[0]…Bucket[n-1] \| elems[0]…elems[n-1]]`; każde `Bucket[i].elems` wskazuje odpowiedni fragment slaba |
+| `destroy_buckets(buckets)` | Zwalnia cały blok jednym `free` (metadane i slab `elems` to jedna alokacja) |
 
 Kubełki **nie są dynamicznie rozszerzane** — `bucket_push` po prostu zwraca błąd przy przepełnieniu. Dobór pojemności jest obowiązkiem wywołującego; pojemność startowa musi uwzględniać pesymistyczny rozkład danych.
 
@@ -167,7 +167,7 @@ static size_t bucket_idx(double elem) {
 }
 ```
 
-Globalne `buckets` (wspólne dla obu wariantów) alokowane są z pojemnością 10 — wystarczającą przy jednostajnym rozkładzie, gdzie oczekiwana liczba elementów na kubełek wynosi 1. Pomiar `t_total` obejmuje całe wywołanie `bucket_sort`, a poprawność wyniku weryfikowana jest sekwencyjną pętlą `is_sorted` poza pomiarem czasu. Wyniki (czasy faz, flaga poprawności) dopisywane są do CSV bez nagłówka jeśli plik już istnieje.
+Globalne `buckets` (wspólne dla obu wariantów) alokowane są z pojemnością 10 — wystarczającą przy jednostajnym rozkładzie, gdzie oczekiwana liczba elementów na kubełek wynosi 1. Pomiar `t_total` obejmuje całe wywołanie `bucket_sort`, a poprawność wyniku weryfikowana jest sekwencyjną pętlą `is_sorted` poza pomiarem czasu. Wyniki (czasy faz, flaga poprawności) dopisywane są do CSV — program zawsze dopisuje wyłącznie wiersz danych, bez nagłówka. Nagłówek w plikach CSV pochodzi z zewnętrznego skryptu benchmarkowego.
 
 ### Wariant 2
 
@@ -200,6 +200,8 @@ Pojemność startowa $c = 10$ jest wystarczająca przy rozkładzie jednostajnym:
 
 Jedyną zmienną współdzieloną z zapisem jest flaga `sort_failed` sygnalizująca przepełnienie kubełka; jej aktualizacja odbywa się przez `#pragma omp atomic write`, co jest wystarczające (flaga przechodzi tylko z `false` na `true`).
 
+`thread_buckets` alokowane jest przez `create_buckets(n_threads * n_buckets, c)` — jednym wywołaniem `malloc` zamiast wcześniejszych $p \cdot k + 1$ osobnych alokacji. Zwolnienie odbywa się przez `destroy_buckets(thread_buckets)` (bez parametru `n`). Zmiana ta eliminuje sekwencyjny narzut wielu wywołań alokatora przy dużych $p$ i $k$.
+
 Etap rozdziału używa `#pragma omp parallel` (nie `parallel for`), ponieważ granice pętli zależą od `tid` obliczanego wewnątrz regionu. Etap scalania musi być **osobnym** regionem równoległym — niejawna bariera kończąca rozdział gwarantuje, że wszystkie wątki skończyły zapis do `thread_buckets` przed rozpoczęciem odczytu.
 
 #### a) Ochrona danych współdzielonych
@@ -217,20 +219,20 @@ Wariant 3 nie używa żadnych locków. Poza `atomic write` na fladze błędu jed
 | Etap | Span (ścieżka krytyczna) | Praca łączna | Pamięć dodatkowa |
 |---|---|---|---|
 | **(b) Rozdział** | $O(n/p)$ | $O(n)$ | $O(p \cdot k \cdot c)$ — prywatne kubełki |
-| **(b') Scalanie** | $O(n/p)$ | $O(n)$ | $O(n)$ — kubełki globalne |
+| **(b') Scalanie** | $O(k)$ | $O(p \cdot k)$ | $O(n)$ — kubełki globalne |
 | **(c) Sortowanie** | $O\!\left(\frac{n}{k}\log\frac{n}{k}\right)$ | $O\!\left(n\log\frac{n}{k}\right)$ | $O(1)$ na kubełek (dzięki użyciu qsort *in-place*) |
 | **(d) Prefix sum** | $O(k)$ sekwencyjnie | $O(k)$ | $O(k)$ — tablica `write_at` |
 | **(d) Zapis** | $O(n/p)$ | $O(n)$ | $O(1)$ |
-| **Całość** | $O\!\left(\frac{n}{p} + \frac{n}{k}\log\frac{n}{k}\right)$ | $O\!\left(n\log\frac{n}{k}\right)$ | $O(n + p \cdot k \cdot c)$ |
+| **Całość** | $O\!\left(k + \frac{n}{k}\log\frac{n}{k}\right)$ | $O\!\left(p \cdot k + n\log\frac{n}{k}\right)$ | $O(n + p \cdot k \cdot c)$ |
 
 Praca łączna wynosi $O\!\left(n \log \frac{n}{k}\right)$, co odpowiada złożoności sekwencyjnego sortowania kubełkowego — algorytm jest **sekwencyjnie efektywny**.
 
 > **Uwaga dotycząca złożoności pamięciowej.**  
-> Alokacja `thread_buckets` tworzy $p \cdot k$ obiektów `Bucket`, z których każdy posiada własną tablicę `elems` o pojemności $c$. Przy domyślnych parametrach testowych $n = k = 10^6$ i $p = 64$ (typowe dla Aresa) zaalokowana pamięć wynosi:
+> Alokacja `thread_buckets` tworzy ciągły blok zawierający $p \cdot k$ obiektów `Bucket` oraz ich wspólny slab `elems`. Przy domyślnych parametrach testowych $n = k = 10^6$ i $p = 64$ (typowe dla Aresa) zaalokowana pamięć wynosi:
 >
 > $$p \cdot k \cdot \underbrace{24\,\text{B}}_{\texttt{sizeof(Bucket)}} + p \cdot k \cdot c \cdot \underbrace{8\,\text{B}}_{\texttt{sizeof(double)}} = 64 \cdot 10^6 \cdot (24 + 80)\,\text{B} \approx 6{,}6\,\text{GB}$$
 >
-> Warto zbadać, czy tak duże jednorazowe zapotrzebowanie na pamięć nie stanie się wąskim gardłem przy dużej liczbie wątków — zarówno ze względu na ograniczenia dostępnej RAM, jak i czas samej alokacji i inicjalizacji tej struktury, który może być nietrywialny w stosunku do czasu właściwego rozdziału.
+> Dzięki pojedynczej alokacji narzut wywołań alokatora jest pomijalny niezależnie od $p$ i $k$ — wcześniejszy schemat wymagał $p \cdot k + 1$ osobnych wywołań `malloc`/`free`, co przy $p = 48$, $k = 10^6$ dawało $\approx 48 \cdot 10^6$ operacji. Wciąż warto jednak zbadać, czy tak duże jednorazowe zapotrzebowanie na pamięć nie stanie się wąskim gardłem — zarówno ze względu na ograniczenia RAM, jak i koszt inicjalizacji $p \cdot k$ elementów `Bucket`.
 
 ## 4. Uruchamianie na Aresie
 
@@ -325,11 +327,11 @@ Rozkład czasu na fazy dla największego problemu ($n = 2\,500\,000$):
 
 Dominującą fazą jest **rozdział** — każdy element wymaga pobrania locka na kubełek. Mimo tego faza skaluje się dobrze: przy $k = n$ kubełki są rzadko odwiedzane przez dwa wątki jednocześnie, więc lock contention jest ograniczone. Fazy sortowania i zapisu skalują się niemal idealnie, operując na rozłącznych fragmentach danych.
 
-Zależność `t_total` od $n$ przy optymalnej liczbie wątków ($p = 24$) jest niemal liniowa:
+Zależność `t_total` od $n$ przy $p = 48$ jest niemal liniowa:
 
 ![bs2 threads=24 total](../plots/bs2_static/bs2_threads24_total.png)
 
-Czas przy $p = 24$ i $n = 2{,}5\text{M}$ wynosi $0{,}036\,\text{s}$ — algorytm zachowuje oczekiwaną złożoność $O(n)$.
+Czas przy $p = 24$ i $n = 2{,}5\text{M}$ wynosi $0{,}033\,\text{s}$, a przy $p = 48$ — $0{,}032\,\text{s}$ — algorytm zachowuje oczekiwaną złożoność $O(n)$.
 
 Heatmapa komponentów potwierdza dominację fazy rozdziału oraz zanikanie fazy sortowania przy rosnącym $p$:
 
@@ -339,19 +341,19 @@ Przyspieszenie `t_total` względem $p = 1$ dla $n = 2\,500\,000$:
 
 | $p$ | $t_\text{total}$ [s] | przyspieszenie |
 |---|---|---|
-| 1 | 0.347 | 1.00× |
-| 4 | 0.102 | 3.42× |
-| 8 | 0.060 | 5.78× |
-| 12 | 0.046 | 7.49× |
-| 24 | 0.036 | 9.63× |
-| 32 | 0.041 | 8.43× |
-| 48 | 0.042 | 8.18× |
+| 1 | 0.345 | 1.00× |
+| 4 | 0.104 | 3.33× |
+| 8 | 0.059 | 5.90× |
+| 12 | 0.044 | 7.87× |
+| 24 | 0.033 | 10.57× |
+| 32 | 0.034 | 10.20× |
+| 48 | 0.032 | 10.84× |
 
-Przyspieszenie osiąga maksimum $9{,}6\times$ przy $p = 24$, po czym spada.
+Przyspieszenie rośnie aż do $p = 48$ ($10{,}84\times$), choć przy $p = 32$ notuje się niewielki spadek względem $p = 24$ ($10{,}20\times$ vs $10{,}57\times$).
 
-**Prawo Amdahla.** Dopasowanie do danych dla $p \leq 24$ daje sekwencyjną frakcję $f_s \approx 6{,}5\%$, co wyznacza teoretyczny sufit $S_{\max} = 1/f_s \approx 15{,}4\times$. Źródłem tej frakcji jest sekwencyjny prefix sum iterujący przez $k = n = 2{,}5 \cdot 10^6$ kubełków oraz stałe narzuty synchronizacji wątków.
+**Prawo Amdahla.** Dopasowanie do danych dla $p \leq 24$ daje sekwencyjną frakcję $f_s \approx 5{,}4\%$, co wyznacza teoretyczny sufit $S_{\max} = 1/f_s \approx 18{,}6\times$. Źródłem tej frakcji jest sekwencyjny prefix sum iterujący przez $k = n = 2{,}5 \cdot 10^6$ kubełków oraz stałe narzuty synchronizacji wątków.
 
-Jednak przy $p = 32$ i $p = 48$ przyspieszenie spada poniżej wartości z $p = 24$, co jest już naruszeniem modelu Amdahla — prawo przewiduje monotonicznie rosnące (choć nasycające się) przyspieszenie. Przyczyną są dwa efekty nieobecne w modelu: **lock contention** w fazie rozdziału (więcej wątków rywalizuje o te same kubełki) oraz **nasycenie przepustowości pamięci** (równoległe zapisy do tablicy wejściowej przy zdefragmentowanych kubełkach). Oba efekty rosną z $p$, a nie są stałe — przez co rzeczywiste przyspieszenie cofa się zamiast jedynie plateau.
+Przy $p = 32$ przyspieszenie chwilowo spada ($10{,}20\times$), po czym przy $p = 48$ rośnie do $10{,}84\times$. Nie jest to klasyczne plateau przewidziane przez Amdahla — nieregularność wynika z konkurencji o locki w fazie rozdziału i wahań NUMA; przy $k = n$ kolizje są jednak rzadkie, więc efekt jest umiarkowany.
 
 ---
 
@@ -367,32 +369,52 @@ Widok komponentów dla $n = 2\,500\,000$ pokazuje źródło problemu:
 
 ![bs3 components N=2.5M](../plots/bs3_static/bs3_N2500000_components.png)
 
-Fazy **Distribute** i **Sort** skalują się poprawnie — obie maleją z $p$. Faza **Merge** jest płaska (zdominowana przez stały koszt sekwencyjny), natomiast **Write-back** rośnie liniowo z $p$: od $\approx 0{,}013\,\text{s}$ przy $p = 1$ do $\approx 1{,}75\,\text{s}$ przy $p = 48$. Jest to konsekwencja rozproszenia globalne `buckets[]` w pamięci — każdy kubełek ma osobno zaalokowaną tablicę `elems`, co przy wielu wątkach wykonujących `memcpy` jednocześnie nasila cache miss'y i nasyca szyny pamięciowe.
+Fazy **Distribute** i **Sort** skalują się poprawnie — obie maleją z $p$. Faza **Write-back** skaluje się dobrze — maleje z $\approx 0{,}036\,\text{s}$ przy $p = 1$ do $\approx 0{,}015\,\text{s}$ przy $p = 48$ (dzięki ciągłemu slab `elems` `memcpy` ma teraz liniowy dostęp do pamięci). Nowym wąskim gardłem jest faza **Merge**: skacze z $0{,}101\,\text{s}$ przy $p = 1$ do $\approx 0{,}21\,\text{s}$ przy $p = 2$ i pozostaje płaska dla wszystkich większych $p$ ($0{,}17$–$0{,}23\,\text{s}$). Dla każdego globalnego kubełka $b$ wątek musi odczytać dane z $p$ oddzielnych wierszy `thread_buckets`, co przy dużym $k$ generuje $O(p \cdot k)$ chybień pamięci podręcznej — łączna praca merga rośnie liniowo z $p$, mimo że każdy element jest kopiowany dokładnie raz.
 
 Heatmapa komponentów ilustruje ten wzorzec na całej przestrzeni parametrów:
 
 ![bs3 heatmap components](../plots/bs3_static/bs3_components_heatmap.png)
 
-Poza wzrostem `t_writeback`, `t_total` jest znacząco większe niż suma zmierzonych faz. Porównanie zależności czasu od $n$ przy $p = 1$ i $p = 48$:
+`t_total` jest nadal większe niż suma zmierzonych faz — różnica rośnie liniowo z $p$. Porównanie dla $n = 2{,}5\text{M}$:
 
-| | $p = 1$, $n = 2{,}5\text{M}$ | $p = 48$, $n = 2{,}5\text{M}$ |
+| | $p = 1$ | $p = 48$ |
 |---|---|---|
-| Suma faz [s] | ≈ 0.51 | ≈ 2.57 |
-| `t_total` [s] | ≈ 0.51 | ≈ 11.86 |
-| Niezliczona różnica [s] | ≈ 0.00 | ≈ 9.29 |
+| Suma faz [s] | 0.300 | 0.330 |
+| `t_total` [s] | 0.315 | 1.000 |
+| Niezliczona różnica [s] | 0.014 | 0.671 |
 
 ![bs3 threads=1 total](../plots/bs3_static/bs3_threads1_total.png)
 ![bs3 threads=48 total](../plots/bs3_static/bs3_threads48_total.png)
 
-Przy $p = 1$ suma faz praktycznie pokrywa się z `t_total` — nie ma czasu "ukrytego". Przy $p = 48$ brakujące $\approx 9\,\text{s}$ to koszt `create_buckets(p \cdot k,\ c)` i `destroy_buckets(...)`: $48 \times 10^6$ wywołań `malloc`/`free` wykonywanych sekwencyjnie, poza zakresem pomiaru `t_distribute`. Problem ten narasta liniowo z $p$ i $n$, co tłumaczy odwrócony gradient na heatmapie.
+Przy $p = 1$ różnica jest pomijalna ($0{,}014\,\text{s}$). Przy $p = 48$ brakujące $0{,}67\,\text{s}$ to koszt sekwencyjnej inicjalizacji `thread_buckets` w `create_buckets`: pętla po $p \cdot k = 48 \cdot 2{,}5 \cdot 10^6 = 120 \cdot 10^6$ obiektów `Bucket` dotyka ~$2{,}9\,\text{GB}$ metadanych oraz wywołuje page faults na slabie ($\approx 9{,}6\,\text{GB}$). Różnica ta rośnie w przybliżeniu liniowo z $p$ ($\approx 0{,}014\,\text{s}$ na wątek), co potwierdza liniową zależność kosztu inicjalizacji od $p \cdot k$.
 
-**Prawo Amdahla.** Wariant 3 narusza podstawowe założenie prawa Amdahla: że sekwencyjna frakcja $f_s$ jest stała i niezależna od $p$. Tu oba problemy mają odwrotną charakterystykę:
+**Prawo Amdahla.** Wariant 3 narusza podstawowe założenie prawa Amdahla: że sekwencyjna frakcja $f_s$ jest stała i niezależna od $p$. Mamy dwa efekty o odwrotnej charakterystyce:
 
-- Koszt alokacji `thread_buckets` wynosi $O(p \cdot k)$ — rośnie *liniowo* z $p$. Im więcej wątków, tym więcej pracy sekwencyjnej przed pierwszą barierą.
-- `t_writeback` rośnie z $p$ z powodu rosnącego nacisku na pamięć przy rozproszonych buforach kubełków.
+- Koszt inicjalizacji `thread_buckets` wynosi $O(p \cdot k)$ — rośnie *liniowo* z $p$. Im więcej wątków, tym więcej pracy sekwencyjnej poza mierzonym regionem.
+- Faza **Merge** ma złożoność pracy $O(p \cdot k)$: $p$ równoległych wątków wykonuje każdy $O(k)$ iteracji, ale każda iteracja generuje $p$ chybień pamięci podręcznej — efektywnie czas merga jest stały lub rośnie z $p$.
 
-W efekcie efektywna sekwencyjna frakcja $f_s(p)$ nie jest stałą, lecz funkcją rosnącą — model Amdahla w ogóle nie stosuje się do opisu tego zachowania. Odwrócony gradient na heatmapie jest tego bezpośrednim dowodem: zamiast $S(p) \to 1/f_s$, mamy $S(p) \to 0$ przy $p \to \infty$.
+W efekcie efektywna sekwencyjna frakcja $f_s(p)$ jest funkcją rosnącą, a nie stałą — model Amdahla w ogóle nie stosuje się do opisu tego zachowania. Odwrócony gradient na heatmapie jest tego bezpośrednim dowodem: zamiast $S(p) \to 1/f_s$, mamy $S(p) \to 0$ przy $p \to \infty$.
 
 ### Porównanie wariantów między sobą
 
+Porównanie `t_total` dla $n = 2\,500\,000$:
+
+| $p$ | bs2 [s] | bs3 [s] | bs2 / bs3 |
+|---|---|---|---|
+| 1 | 0.345 | 0.315 | 1.10× |
+| 4 | 0.104 | 0.358 | 0.29× |
+| 8 | 0.059 | 0.393 | 0.15× |
+| 12 | 0.044 | 0.419 | 0.10× |
+| 24 | 0.033 | 0.607 | 0.05× |
+| 48 | 0.032 | 1.000 | 0.03× |
+
+Przy $p = 1$ oba warianty są zbliżone: bs3 jest nieznacznie szybszy ($0{,}315\,\text{s}$ vs $0{,}345\,\text{s}$), ponieważ eliminuje koszt locków w fazie rozdziału. Dla każdego $p > 1$ bs2 jest szybszy i przewaga rośnie z liczbą wątków — przy $p = 48$ bs2 jest ponad $30\times$ szybsze.
+
+Główne przyczyny przewagi bs2 przy wielu wątkach:
+
+- **Brak fazy scalania.** bs2 wstawia bezpośrednio do kubełków globalnych; bs3 musi po rozdziale wykonać mergę o koszcie $O(p \cdot k)$, która nie skaluje się z $p$.
+- **Brak kosztu inicjalizacji `thread_buckets`.** bs2 nie alokuje prywatnych kubełków; bs3 inicjalizuje sekwencyjnie $p \cdot k$ struktur, co przy $p = 48$, $k = 2{,}5 \cdot 10^6$ pochłania $\approx 0{,}67\,\text{s}$ poza mierzonym zakresem.
+- **Lock contention w bs2 jest ograniczone.** Przy $k = n$ każdy kubełek przyjmuje średnio jeden element, więc dwa wątki rzadko rywalizują o ten sam lock.
+
+Wariant 3 mógłby być konkurencyjny przy znacznie mniejszym $k$ (mało kubełków, wiele elementów na kubełek), gdzie lock contention w bs2 byłoby poważnym problemem i koszt $O(p \cdot k)$ merga byłby pomijalny wobec rozdziału.
 

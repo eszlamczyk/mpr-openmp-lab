@@ -12,7 +12,7 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
-PYTHON="$PROJECT_DIR/.venv/bin/python"
+PYTHON="$SCRIPT_DIR/.venv/bin/python"
 PLOT_SCRIPT="$SCRIPT_DIR/plot_slice.py"
 RESULTS_DIR="$PROJECT_DIR/results"
 OUT_DIR="${1:-$RESULTS_DIR/plots}"
