@@ -26,7 +26,7 @@ Bucket bucket_init(size_t capacity);
 Bucket* create_buckets(size_t n, size_t capacity);
 
 void bucket_free(Bucket* bucket);
-void destroy_buckets(Bucket* buckets, size_t n);
+void destroy_buckets(Bucket* buckets);
 
 typedef struct {
     double t_distribute; /* (b)  distributing elements into buckets    */

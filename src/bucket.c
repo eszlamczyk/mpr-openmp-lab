@@ -23,22 +23,24 @@ void bucket_free(Bucket *bucket) {
 }
 
 Bucket* create_buckets(size_t n, size_t capacity) {
-    Bucket* buckets = (Bucket*)malloc(n * sizeof(Bucket));
-    if (buckets == NULL) {
+    void* block = malloc(n * sizeof(Bucket) + n * capacity * sizeof(double));
+    if (block == NULL) {
         fprintf(stderr, "malloc failed miserably");
         exit(EXIT_FAILURE);
     }
 
+    Bucket* buckets = (Bucket*)block;
+    double* slab    = (double*)((char*)block + n * sizeof(Bucket));
+
     for (size_t i = 0; i < n; i++) {
-        buckets[i] = bucket_init(capacity);
+        buckets[i].elems    = &slab[i * capacity];
+        buckets[i].n_elems  = 0;
+        buckets[i].capacity = capacity;
     }
     return buckets;
 }
 
-void destroy_buckets(Bucket *buckets, size_t n) {
-    for (size_t i = 0; i < n; i++) {
-        bucket_free(&buckets[i]);
-    }
+void destroy_buckets(Bucket *buckets) {
     free(buckets);
 }
 

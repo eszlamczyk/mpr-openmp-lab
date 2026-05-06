@@ -53,7 +53,7 @@ int main(int argc, char* argv[]) {
 
     if (status == FAILURE) {
         fprintf(stderr, "bucket_sort failed\n");
-        destroy_buckets(buckets, n);
+        destroy_buckets(buckets);
         free(array);
         exit(EXIT_FAILURE);
     }
@@ -69,7 +69,7 @@ int main(int argc, char* argv[]) {
     print_results(prog, omp_get_max_threads(), n,
                   t_random, &times, t_total, sorted, csv_path);
 
-    destroy_buckets(buckets, n);
+    destroy_buckets(buckets);
     free(array);
     return sorted ? EXIT_SUCCESS : EXIT_FAILURE;
 }

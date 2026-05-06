@@ -73,6 +73,11 @@ def main():
     xs = grouped[x_col].tolist()
     x_labels = [fmt_n(v) if ftype == "threads" else str(v) for v in xs]
 
+    MAX_TICKS = 10
+    step = max(1, len(xs) // MAX_TICKS)
+    tick_xs     = xs[::step]
+    tick_labels = x_labels[::step]
+
     tag     = f"{algorithm}_{ftype}{value}"
     out_dir = "."
 
@@ -81,8 +86,8 @@ def main():
 
     ax1.plot(xs, grouped["t_total"], marker="o", linewidth=2,
              color="steelblue", label="t_total")
-    ax1.set_xticks(xs)
-    ax1.set_xticklabels(x_labels, rotation=30, ha="right")
+    ax1.set_xticks(tick_xs)
+    ax1.set_xticklabels(tick_labels, rotation=30, ha="right")
     ax1.set_xlabel(x_label)
     ax1.set_ylabel("Time (s)")
     ax1.set_title(f"{algorithm}  –  Total Time  ({fixed_desc})",
@@ -107,8 +112,8 @@ def main():
         ys = grouped[col]
         ax.plot(xs, ys, linestyle="--", linewidth=1.4, color=color, alpha=0.7)
         ax.scatter(xs, ys, color=color, s=60, zorder=5)
-        ax.set_xticks(xs)
-        ax.set_xticklabels(x_labels, rotation=30, ha="right", fontsize=8)
+        ax.set_xticks(tick_xs)
+        ax.set_xticklabels(tick_labels, rotation=30, ha="right", fontsize=8)
         ax.set_xlabel(x_label, fontsize=9)
         ax.set_ylabel("Time (s)", fontsize=9)
         ax.set_title(label, fontsize=10, fontweight="bold")
