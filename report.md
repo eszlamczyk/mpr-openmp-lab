@@ -169,7 +169,7 @@ static size_t bucket_idx(double elem) {
 }
 ```
 
--lobalne `buckets` (wspólne dla obu wariantów) alokowane są z pojemnością 10 - wystarczającą przy jednostajnym rozkładzie, gdzie oczekiwana liczba elementów na kubełek wynosi 1. Pomiar `t_total` obejmuje całe wywołanie `bucket_sort`, a poprawność wyniku weryfikowana jest sekwencyjną pętlą `is_sorted` poza pomiarem czasu. Wyniki (czasy faz, flaga poprawności) dopisywane są do CSV - program zawsze dopisuje wyłącznie wiersz danych, bez nagłówka. Nagłówek w plikach CSV pochodzi z zewnętrznego skryptu benchmarkowego.
+Globalne `buckets` (wspólne dla obu wariantów) alokowane są z pojemnością 10 - wystarczającą przy jednostajnym rozkładzie, gdzie oczekiwana liczba elementów na kubełek wynosi 1. Pomiar `t_total` obejmuje całe wywołanie `bucket_sort`, a poprawność wyniku weryfikowana jest sekwencyjną pętlą `is_sorted` poza pomiarem czasu. Wyniki (czasy faz, flaga poprawności) dopisywane są do CSV - program zawsze dopisuje wyłącznie wiersz danych, bez nagłówka. Nagłówek w plikach CSV pochodzi z zewnętrznego skryptu benchmarkowego.
 
 ### Wariant 2
 
