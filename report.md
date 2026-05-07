@@ -433,7 +433,7 @@ Zależność `t_total` od $n$ przy $p = 48$ jest niemal liniowa:
 ![bs2 threads=1 total](./plots/bs2_static/bs2_threads1_total.png)
 ![bs2 threads=48 total](./plots/bs2_static/bs2_threads48_total.png)
 
-Czas przy $p = 24$ i $n = 2{,}5\text{M}$ wynosi $0{,}03\,\text{s}$, a przy $p = 48$ - $0{,}032\,\text{s}$ - algorytm zachowuje oczekiwaną złożoność $O(n)$.
+Czas przy $p = 1$ i $n = 2{,}5\text{M}$ wynosi $0{,}35\,\text{s}$, a przy $p = 48$ - $0{,}032\,\text{s}$ - algorytm zachowuje oczekiwaną złożoność $O(n)$.
 
 Heatmapa komponentów potwierdza dominację fazy rozdziału oraz zanikanie fazy sortowania przy rosnącym $p$:
 
