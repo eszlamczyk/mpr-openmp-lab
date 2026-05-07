@@ -173,7 +173,59 @@ Globalne `buckets` (wspólne dla obu wariantów) alokowane są z pojemnością 1
 
 ### Wariant 2
 
-// todo - jbrs
+#### Opis algorytmu
+
+Wariant 2 zrównolegla fazę rozdziału poprzez ochronę każdego kubełka globalnego **oddzielnym lockiem**. Wątki wstawiają elementy bezpośrednio do wspólnych `buckets[]`, zabezpieczając każde wstawienie parą `omp_set_lock` / `omp_unset_lock`. Nie istnieje faza scalania ani prywatne kopie kubełków - narzut pamięciowy wynosi $O(k)$ locków, niezależnie od $p$.
+
+Algorytm przebiega w czterech etapach:
+
+1. **(a) Inicjalizacja locków** - $k$ locków alokowanych i inicjalizowanych równolegle w pętli `parallel for` poza mierzonym czasem.
+2. **(b) Rozdział** - pętla `parallel for schedule(static)` po wszystkich $n$ elementach. Każdy element trafia do kubełka globalnego pod ochroną jego locka.
+3. **(c) Sortowanie kubełków** - niezależne sortowanie każdego kubełka przez `qsort`. Brak kolizji.
+4. **(d) Zapis** - wyznaczenie pozycji zapisu (prefix sum, sekwencyjnie), a następnie równoległe przepisanie posortowanych kubełków do tablicy wyjściowej blokami `memcpy`. Każdy kubełek trafia do rozłącznego fragmentu - brak kolizji.
+
+#### Implementacja
+
+Synchronizacja opiera się na tablicy `omp_lock_t locks[k]`, gdzie `locks[i]` chroni wyłącznie `buckets[i]`. Inicjalizacja i niszczenie locków odbywa się w osobnych pętlach `parallel for` poza mierzonym zakresem.
+
+Faza rozdziału używa `#pragma omp parallel for schedule(static)`: iteracje $[0, n)$ dzielone są statycznie między wątki. Każda iteracja akwiruje lock dla docelowego kubełka, wstawia element, po czym go zwalnia:
+
+```c
+omp_set_lock(&locks[idx]);
+bucket_push(&buckets[idx], array[i]);
+omp_unset_lock(&locks[idx]);
+```
+
+Granularność blokady jest **per kubełek** - wątki piszące do różnych kubełków nigdy się nie blokują wzajemnie. Przy $k = n$ i rozkładzie jednostajnym każdy kubełek przyjmuje średnio jeden element, więc kolizje dwóch wątków na tym samym locku są rzadkie.
+
+Flaga `sort_failed` aktualizowana jest przez `#pragma omp atomic write`, co jest wystarczające - zmiana jest wyłącznie jednostronna (`false` → `true`).
+
+Fazy sortowania i zapisu są analogiczne do wariantu 3: `parallel for schedule(static)` po kubełkach oraz `memcpy` do rozłącznych fragmentów tablicy wyjściowej.
+
+#### a) Ochrona danych współdzielonych
+
+Wariant 2 chroni dane przez **blokowanie per kubełek** zamiast eliminacji współdzielenia.
+
+Tablica wejściowa `array[]` jest czytana przez wiele wątków wyłącznie do odczytu - brak konfliktu. Każdy kubełek globalny `buckets[i]` chroniony jest przez `locks[i]`: wątek może pisać do `buckets[i]` tylko po nabyciu locka, co wyklucza równoczesny zapis dwóch wątków do tego samego kubełka. Fazy sortowania i zapisu nie wymagają synchronizacji - `parallel for` przydziela kubełki wątkom rozłącznie, a write-back zapisuje do rozłącznych fragmentów tablicy.
+
+Wariant 2 nie wymaga żadnych jawnych barier między etapami - niejawna bariera kończąca region `parallel for` gwarantuje, że wszystkie elementy zostały wstawione przed rozpoczęciem sortowania.
+
+#### b) Złożoność obliczeniowa i pamięciowa
+
+| Etap | Span (ścieżka krytyczna) | Praca łączna | Pamięć dodatkowa |
+|---|---|---|---|
+| **(a) Init locków** | $O(k/p)$ | $O(k)$ | $O(k)$ - tablica `locks` |
+| **(b) Rozdział** | $O(n/p)$ + contention | $O(n)$ | $O(1)$ |
+| **(c) Sortowanie** | $O\!\left(\frac{n}{k}\log\frac{n}{k}\right)$ | $O\!\left(n\log\frac{n}{k}\right)$ | $O(1)$ na kubełek |
+| **(d) Prefix sum** | $O(k)$ sekwencyjnie | $O(k)$ | $O(k)$ - tablica `write_at` |
+| **(d) Zapis** | $O(n/p)$ | $O(n)$ | $O(1)$ |
+| **Całość** | $O\!\left(\frac{k}{p} + \frac{n}{p} + \frac{n}{k}\log\frac{n}{k}\right)$ | $O\!\left(n\log\frac{n}{k}\right)$ | $O(k)$ |
+
+Praca łączna wynosi $O\!\left(n\log\frac{n}{k}\right)$ - identycznie jak w sekwencyjnym sortowaniu kubełkowym. Algorytm jest **sekwencyjnie efektywny**.
+
+Narzut pamięciowy jest stały i niezależny od $p$: dodatkowe alokacje to tablica $k$ locków i tablica `write_at` rozmiaru $k$ - łącznie $O(k)$. Przy $k = n = 10^6$ zajmują one kilkadziesiąt megabajtów, wobec $\approx 6{,}6\,\text{GB}$ dla wariantu 3 przy $p = 64$.
+
+Oczekiwany span fazy rozdziału wynosi $O(n/p)$: przy rozkładzie jednostajnym i $k = n$ prawdopodobieństwo kolizji dwóch wątków na tym samym locku wynosi $1/k$, więc oczekiwany czas oczekiwania na locku jest pomijalny. W pesymistycznym przypadku (wszystkie elementy w jednym kubełku) rozdział degeneruje do sekwencyjnego $O(n)$.
 
 ### Wariant 3
 
@@ -238,7 +290,54 @@ Praca łączna wynosi $O\!\left(n \log \frac{n}{k}\right)$, co odpowiada złożo
 
 ## 4. Uruchamianie na Aresie
 
-// todo - opisać odpalanie na aresie + skrypty
+Pomiary wykonano na klastrze **Ares** przy użyciu skryptów SLURM znajdujących się w katalogu `scripts/`. Każdy skrypt jest jednocześnie skryptem Bash i plikiem zadania SLURM - można go przesłać poleceniem:
+
+```bash
+sbatch scripts/run_bs2.sh
+```
+
+Wszystkie skrypty rezerwują **1 węzeł wyłącznie** (`--exclusive`), 1 zadanie z 48 rdzeniami (`--cpus-per-task=48`). Przed uruchomieniem pomiarów skrypt ładuje moduł `gcc` (jeśli dostępne jest polecenie `module`) i buduje pliki wykonywalne z pomocą dostarczonego `Makefile`. Wiązanie wątków do rdzeni ustawione jest przez zmienne środowiskowe `OMP_PLACES=cores` i `OMP_PROC_BIND=close`, co minimalizuje koszt migracji wątków między rdzeniami.
+
+Wyniki dopisywane są do pliku CSV w katalogu `results/`. Nazwa pliku jest parametryzowana: gdy skrypt uruchamiany jest przez SLURM, do nazwy dodawany jest identyfikator zadania (np. `bs2_123456.csv`); lokalnie używana jest nazwa domyślna (np. `bs2.csv`).
+
+### Skrypty benchmarkowe
+
+#### `scripts/run_bs2.sh` i `scripts/run_bs3.sh`
+
+Pełne benchmarki odpowiednio dla wariantu 2 i 3. Parametry przestrzeni pomiarowej:
+
+| Parametr | Wartości |
+|---|---|
+| $n$ | 37 wartości: 100, 300, 500, 1 000, …, 1 000 000, 1 500 000, 2 000 000, 2 500 000 |
+| $p$ | 1, 2, 3, 4, 6, 8, 10, 12, 16, 20, 24, 32, 48 |
+| Limit czasu | 1 godz. 30 min (`--time=01:30:00`) |
+| Partycja | `plgrid` |
+
+Kombinacje z $p > n$ są pomijane (zbędna konfiguracja przy tak małej pracy). Każda poprawna kombinacja uruchamiana jest raz; wielokrotne uruchomienie skryptu dopisuje kolejne wiersze do tego samego CSV, co pozwala uśrednić wyniki po stronie skryptów rysujących.
+
+#### `scripts/run_bs2_short.sh` i `scripts/run_bs3_short.sh`
+
+Skrócone warianty do szybkiej weryfikacji poprawności i wstępnej oceny wydajności na partycji testowej:
+
+| Parametr | Wartości |
+|---|---|
+| $n$ | 1 000, 10 000, 100 000, 1 000 000 |
+| $p$ | 1, 4, 16, 48 |
+| Limit czasu | 10 min (`--time=00:10:00`) |
+| Partycja | `plgrid-testing` |
+
+#### `scripts/random_tests.sh`
+
+Benchmark do pomiaru wydajności generowania losowych liczb (`random_array`) dla różnych wariantów harmonogramowania. Parametry:
+
+| Parametr | Wartości |
+|---|---|
+| $n$ | 100, 1 000, 10 000, 100 000, 1 000 000, 10 000 000 |
+| $p$ | 1, 2, 8, 16, 32, 48 |
+| Limit czasu | 1 godz. (`--time=01:00:00`) |
+| Partycja | `plgrid` |
+
+Skrypt buduje i uruchamia binarny plik `scheduler`, który testuje pięć wariantów harmonogramowania opisanych w sekcji 2.
 
 ## 5. Wyniki
 
@@ -331,11 +430,10 @@ Dominującą fazą jest **rozdział** - każdy element wymaga pobrania locka na 
 
 Zależność `t_total` od $n$ przy $p = 48$ jest niemal liniowa:
 
+![bs2 threads=1 total](./plots/bs2_static/bs2_threads1_total.png)
 ![bs2 threads=48 total](./plots/bs2_static/bs2_threads48_total.png)
 
-![bs2 threads=24 total](./plots/bs2_static/bs2_threads24_total.png)
-
-Czas przy $p = 24$ i $n = 2{,}5\text{M}$ wynosi $0{,}03\,\text{s}$, a przy $p = 48$ - $0{,}032\,\text{s}$ - algorytm zachowuje oczekiwaną złożoność $O(n)$.
+Czas przy $p = 1$ i $n = 2{,}5\text{M}$ wynosi $0{,}35\,\text{s}$, a przy $p = 48$ - $0{,}032\,\text{s}$ - algorytm zachowuje oczekiwaną złożoność $O(n)$.
 
 Heatmapa komponentów potwierdza dominację fazy rozdziału oraz zanikanie fazy sortowania przy rosnącym $p$:
 
