@@ -43,6 +43,10 @@ int main(int argc, char* argv[]) {
         exit(EXIT_FAILURE);
     }
 
+    double t_random_start = omp_get_wtime();
+    random_array(array, n, (double)n);
+    double t_random = omp_get_wtime() - t_random_start;
+
 #ifdef SORT_CHECK
 
     double* test_array = (double*)malloc(n * sizeof(double));
@@ -50,10 +54,6 @@ int main(int argc, char* argv[]) {
     qsort_double(test_array, n);
 
 #endif
-
-    double t_random_start = omp_get_wtime();
-    random_array(array, n, (double)n);
-    double t_random = omp_get_wtime() - t_random_start;
 
     Bucket* buckets = create_buckets(n, 10);
     if (buckets == NULL) {
