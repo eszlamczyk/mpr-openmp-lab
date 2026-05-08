@@ -8,18 +8,26 @@
 #include "output.h"
 #include "random.h"
 
+#ifdef SORT_CHECK
+
+#include "sort_check.h"
+
+#endif
+
 #define N 1000000
 
 static size_t bucket_idx(double elem) {
     return (size_t)elem;
 }
 
+#ifndef SORT_CHECK
 static bool is_sorted(double* array, size_t n) {
     for (size_t i = 1; i < n; i++) {
         if (array[i] <= array[i - 1]) return false;
     }
     return true;
 }
+#endif
 
 int main(int argc, char* argv[]) {
     size_t n = N;
@@ -34,6 +42,14 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "Failed to allocate array of size %zu\n", n);
         exit(EXIT_FAILURE);
     }
+
+#ifdef SORT_CHECK
+
+    double* test_array = (double*)malloc(n * sizeof(double));
+    memcpy((void*)test_array, (const void*)array, n * sizeof(double));
+    qsort_double(test_array, n);
+
+#endif
 
     double t_random_start = omp_get_wtime();
     random_array(array, n, (double)n);
@@ -58,7 +74,13 @@ int main(int argc, char* argv[]) {
         exit(EXIT_FAILURE);
     }
 
+#ifdef SORT_CHECK
+    bool sorted = compare_arrays(array, test_array, n);
+    free(test_array);
+#else
     bool sorted = is_sorted(array, n);
+#endif
+
     if (!sorted) {
         fprintf(stderr, "RESULT IS NOT SORTED\n");
     }
