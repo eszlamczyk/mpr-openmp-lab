@@ -202,6 +202,10 @@ Flaga `sort_failed` aktualizowana jest przez `#pragma omp atomic write`, co jest
 
 Fazy sortowania i zapisu są analogiczne do wariantu 3: `parallel for schedule(static)` po kubełkach oraz `memcpy` do rozłącznych fragmentów tablicy wyjściowej.
 
+#### Poprawność
+
+Algorytm został przetestowany i działa poprawnie. Wyniki testów znajdują się w pliku `results/bs2_check_result.txt`. Test przeprowadzono dla $n = 100\,000$ elementów oraz $p \in \{1, 2, 8, 16, 48\}$ wątków - we wszystkich przypadkach tablica wyjściowa była poprawnie posortowana (`Sorted: yes`).
+
 #### a) Ochrona danych współdzielonych
 
 Wariant 2 chroni dane przez **blokowanie per kubełek** zamiast eliminacji współdzielenia.
@@ -257,6 +261,10 @@ Jedyną zmienną współdzieloną z zapisem jest flaga `sort_failed` sygnalizuj�
 `thread_buckets` alokowane jest przez `create_buckets(n_threads * n_buckets, c)` - jednym wywołaniem `malloc` zamiast wcześniejszych $p \cdot k + 1$ osobnych alokacji. Zwolnienie odbywa się przez `destroy_buckets(thread_buckets)` (bez parametru `n`). Zmiana ta eliminuje sekwencyjny narzut wielu wywołań alokatora przy dużych $p$ i $k$.
 
 Etap rozdziału używa `#pragma omp parallel` (nie `parallel for`), ponieważ granice pętli zależą od `tid` obliczanego wewnątrz regionu. Etap scalania musi być **osobnym** regionem równoległym - niejawna bariera kończąca rozdział gwarantuje, że wszystkie wątki skończyły zapis do `thread_buckets` przed rozpoczęciem odczytu.
+
+#### Poprawność
+
+Algorytm został przetestowany i działa poprawnie. Wyniki testów znajdują się w pliku `results/bs3_check_result.txt`. Test przeprowadzono dla $n = 100\,000$ elementów oraz $p \in \{1, 2, 8, 16, 48\}$ wątków - we wszystkich przypadkach tablica wyjściowa była poprawnie posortowana (`Sorted: yes`).
 
 #### a) Ochrona danych współdzielonych
 
