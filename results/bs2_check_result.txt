@@ -1,0 +1,50 @@
+Threads:      1
+Elements:     100000
+Sorted:       yes
+---
+t_random:     0.000884 s
+t_distribute: 0.004624 s
+t_merge:      0.000000 s
+t_sort:       0.001802 s
+t_writeback:  0.001137 s
+t_total:      0.008142 s
+Threads:      2
+Elements:     100000
+Sorted:       yes
+---
+t_random:     0.000484 s
+t_distribute: 0.002775 s
+t_merge:      0.000000 s
+t_sort:       0.000955 s
+t_writeback:  0.000591 s
+t_total:      0.004610 s
+Threads:      8
+Elements:     100000
+Sorted:       yes
+---
+t_random:     0.000306 s
+t_distribute: 0.001439 s
+t_merge:      0.000000 s
+t_sort:       0.000279 s
+t_writeback:  0.000315 s
+t_total:      0.002128 s
+Threads:      16
+Elements:     100000
+Sorted:       yes
+---
+t_random:     0.000423 s
+t_distribute: 0.001117 s
+t_merge:      0.000000 s
+t_sort:       0.000152 s
+t_writeback:  0.000297 s
+t_total:      0.001648 s
+Threads:      48
+Elements:     100000
+Sorted:       yes
+---
+t_random:     0.001184 s
+t_distribute: 0.001231 s
+t_merge:      0.000000 s
+t_sort:       0.000121 s
+t_writeback:  0.000485 s
+t_total:      0.001962 s
